@@ -29,7 +29,7 @@
   "module": "dist/one-client-react.esm.js",
   "scripts": {
     "build": "npm run lint && rollup -c --environment NODE_ENV:production",
-    "lint": "eslint --ext=tsx ./src ./__tests__",
+    "lint": "eslint --ext=tsx ./src",
     "start": "rollup -cw",
     "test": "jest --coverage",
     "prepack": "npm run build",
@@ -53,7 +53,7 @@
     "type": "git",
     "url": "git+https://github.com/eartho-group-group/one-client-react.git"
   },
-  "license": "MIT",
+  "license": "MPL-2.0",
   "bugs": {
     "url": "https://github.com/eartho-group-group/one-client-react/issues"
   },
@@ -108,6 +108,6 @@
     }
   },
   "dependencies": {
-    "@eartho/one-client-js": "^1.0.21"
+    "@eartho/one-client-js": "^1.0.22"
   }
 }
