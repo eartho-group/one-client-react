@@ -44,7 +44,7 @@ From improving customer experience through seamless sign-on to making auth as ea
 Here's why:
 
 * Ready high converting UI/UX
-* Login from Google, Twitter, Github, Facebook, Apple, Microsoft, VK, Snapchat, Yandex, Reddit, SMS, Metamask any many more at once with not extra steps or
+* Login from Google, Twitter, Github, Facebook, Apple, Microsoft, VK, Snapchat, Yandex, Reddit, SMS, Metamask at once with not extra steps or
   extra effort.
 * Your users will be protected under our third layer, we prevent from companies to track after your
   users.
