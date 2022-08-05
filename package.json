@@ -1,8 +1,9 @@
 {
   "author": "Eartho",
   "name": "@eartho/one-client-react",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Login and authentication from all sources with 1 line of code ! Login from Google, Twitter, Github, Facebook, Apple, Microsoft, Twitch, VK, SMS and Metamask at once with not extra steps or extra effort.",
+  "license": "Eartho Inc.",
   "keywords": [
     "eartho",
     "react",
@@ -53,7 +54,6 @@
     "type": "git",
     "url": "git+https://github.com/eartho-group/one-client-react.git"
   },
-  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/eartho-group/one-client-react/issues"
   },
