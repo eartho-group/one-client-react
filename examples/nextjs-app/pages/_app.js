@@ -14,7 +14,8 @@ class MyApp extends App {
   render() {
     const { Component, pageProps } = this.props;
     return (
-      <EarthoOneProvider
+      <>
+      {typeof window !== 'undefined' &&<EarthoOneProvider
         clientId={process.env.NEXT_PUBLIC_CLIENT_ID}
         redirectUri={typeof window !== 'undefined' && window.location.origin}
         onRedirectCallback={onRedirectCallback}
@@ -29,8 +30,8 @@ class MyApp extends App {
         </Head>
         <Nav />
         <Component {...pageProps} />
-      </EarthoOneProvider>
-    );
+      </EarthoOneProvider>}
+    </>);
   }
 }
 
