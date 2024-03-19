@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useEarthoOne } from '@eartho/one-client-react';
 
-export const useApi = (url, options) => {
+export const useApi = (
+  url: string,
+  options: any = {}
+): { error?: Error | null; loading: boolean; data?: any } => {
   const { getAccessTokenSilently } = useEarthoOne();
   const [state, setState] = useState({
     error: null,
@@ -30,7 +33,7 @@ export const useApi = (url, options) => {
           error: null,
           loading: false,
         });
-      } catch (error) {
+      } catch (error: any) {
         setState({
           ...state,
           error,

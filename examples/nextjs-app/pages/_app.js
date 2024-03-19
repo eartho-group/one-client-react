@@ -14,24 +14,20 @@ class MyApp extends App {
   render() {
     const { Component, pageProps } = this.props;
     return (
-      <>
-      {typeof window !== 'undefined' &&<EarthoOneProvider
+      <EarthoOneProvider
+        domain={process.env.NEXT_PUBLIC_DOMAIN}
         clientId={process.env.NEXT_PUBLIC_CLIENT_ID}
-        redirectUri={typeof window !== 'undefined' && window.location.origin}
         onRedirectCallback={onRedirectCallback}
+        authorizationParams={{
+          scope: 'profile email read:users',
+          audience: process.env.NEXT_PUBLIC_AUDIENCE,
+          redirect_uri: typeof window !== 'undefined' && window.location.origin,
+        }}
       >
-        <Head>
-          <link
-            rel="stylesheet"
-            href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
-            integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
-            crossOrigin="anonymous"
-          />
-        </Head>
         <Nav />
         <Component {...pageProps} />
-      </EarthoOneProvider>}
-    </>);
+      </EarthoOneProvider>
+    );
   }
 }
 

@@ -1,18 +1,17 @@
 import React from 'react';
-import { withAuthenticationRequired } from '@eartho/one-client-react';
 import { useApi } from '../hooks/use-api';
-import { Loading } from '../components/Loading';
-import { Error } from '../components/Error';
+import { Loading } from './Loading';
+import { Error } from './Error';
 
-const PORT = process.env.NEXT_PUBLIC_API_PORT || 3001;
+const PORT = process.env.GATSBY_API_PORT || 3001;
 
-const Users = () => {
+export function Users() {
   const {
     loading,
     error,
     data: users = [],
-  } = useApi(`http://localhost:${PORT}/users`, {
-    audience: process.env.NEXT_PUBLIC_AUDIENCE,
+  } = useApi(`http://127.0.0.1:${PORT}/users`, {
+    audience: process.env.GATSBY_AUDIENCE,
     scope: 'profile email read:users',
   });
 
@@ -42,6 +41,4 @@ const Users = () => {
       </tbody>
     </table>
   );
-};
-
-export default withAuthenticationRequired(Users);
+}
