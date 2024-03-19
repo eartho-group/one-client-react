@@ -16,8 +16,10 @@ import {
   RedirectConnectOptions as EarthoOneRedirectConnectOptions,
   RedirectLoginResult,
   GetTokenSilentlyOptions,
+  GetUserOptions,
+  User,
 } from '@eartho/one-client-js';
-import EarthoOneContext, { RedirectConnectOptions } from './eartho-context';
+import EarthoOneContext, { EarthoOneContextInterface, RedirectConnectOptions } from './eartho-context';
 import { hasAuthParams, loginError, tokenError } from './utils';
 import { reducer } from './reducer';
 import { initialAuthState } from './auth-state';
@@ -223,7 +225,7 @@ const EarthoOneProvider = (opts: EarthoOneProviderOptions): JSX.Element => {
   );
 
   const getUser = useCallback(
-    (opts) => client.getUser(opts),
+    (options?: GetUserOptions) => client.getUser(options),
     [client]
   );
 
@@ -243,18 +245,16 @@ const EarthoOneProvider = (opts: EarthoOneProviderOptions): JSX.Element => {
     [client]
   );
 
-  const contextValue = useMemo(() => {
-    return {
-      ...state,
-      buildLogoutUrl,
-      getIdToken,
-      getUser,
-      connectWithRedirect,
-      connectWithPopup,
-      logout,
-      handleRedirectCallback,
-    };
-  }, [
+  const contextValue = useMemo<EarthoOneContextInterface<User>>(() => ({
+    ...state,
+    buildLogoutUrl,
+    getIdToken,
+    getUser,
+    connectWithRedirect,
+    connectWithPopup,
+    logout,
+    handleRedirectCallback,
+  }), [
     state,
     buildLogoutUrl,
     getIdToken,
