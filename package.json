@@ -1,7 +1,7 @@
 {
   "author": "Eartho",
   "name": "@eartho/one-client-react",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Eartho SDK for authentication, verifications & payments",
   "keywords": [
     "eartho",
@@ -96,6 +96,6 @@
     "react-dom": "^16.11.0 || ^17 || ^18"
   },
   "dependencies": {
-    "@eartho/one-client-js": "^2.0.1"
+    "@eartho/one-client-js": "^2.0.5"
   }
 }
