@@ -28,25 +28,25 @@ export const reducer = (state: AuthState, action: Action): AuthState => {
     case 'INITIALISED':
       return {
         ...state,
-        isConnected: !!action.user,
+        isAuthenticated: !!action.user,
         user: action.user,
         isLoading: false,
         error: undefined,
       };
     case 'HANDLE_REDIRECT_COMPLETE':
     case 'GET_ACCESS_TOKEN_COMPLETE':
-      if (state.user?.updated_at === action.user?.updated_at) {
+      if (state.user === action.user) {
         return state;
       }
       return {
         ...state,
-        isConnected: !!action.user,
+        isAuthenticated: !!action.user,
         user: action.user,
       };
     case 'LOGOUT':
       return {
         ...state,
-        isConnected: false,
+        isAuthenticated: false,
         user: undefined,
       };
     case 'ERROR':

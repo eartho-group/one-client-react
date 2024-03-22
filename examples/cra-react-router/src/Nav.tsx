@@ -3,7 +3,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { useEarthoOne } from '@eartho/one-client-react';
 
 export function Nav() {
-  const { isAuthenticated, user, loginWithRedirect, logout } = useEarthoOne<{
+  const { isAuthenticated, user, connectWithRedirect, logout } = useEarthoOne<{
     name: string;
   }>();
   const { pathname } = useLocation();
@@ -47,7 +47,7 @@ export function Nav() {
         <button
           className="btn btn-outline-success"
           id="login"
-          onClick={() => loginWithRedirect()}
+          onClick={() => connectWithRedirect()}
         >
           login
         </button>

@@ -1,11 +1,92 @@
 # Examples
+## Use with a Class Component
 
-1. [Protecting a route in a `react-router-dom v6` app](#1-protecting-a-route-in-a-react-router-dom-app)
-2. [Protecting a route in a Gatsby app](#2-protecting-a-route-in-a-gatsby-app)
-3. [Protecting a route in a Next.js app (in SPA mode)](#3-protecting-a-route-in-a-nextjs-app-in-spa-mode)
-4. [Create a `useApi` hook for accessing protected APIs with an access token.](#4-create-a-useapi-hook-for-accessing-protected-apis-with-an-access-token)
+Use the `withEarthoOne` higher order component to add the `eartho` property to Class components:
 
-## 1. Protecting a route in a `react-router-dom v6` app
+```jsx
+import React, { Component } from 'react';
+import { withEarthoOne } from '@eartho/one-client-react';
+
+class Profile extends Component {
+  render() {
+    // `this.props.eartho` has all the same properties as the `useEarthoOne` hook
+    const { user } = this.props.eartho;
+    return <div>Hello {user.name}</div>;
+  }
+}
+
+export default withEarthoOne(Profile);
+```
+
+## Protect a Route
+
+Protect a route component using the `withAuthenticationRequired` higher order component. Visits to this route when unauthenticated will redirect the user to the login page and back to this page after login:
+
+```jsx
+import React from 'react';
+import { withAuthenticationRequired } from '@eartho/one-client-react';
+
+const PrivateRoute = () => <div>Private</div>;
+
+export default withAuthenticationRequired(PrivateRoute, {
+  // Show a message while the user waits to be redirected to the login page.
+  onRedirecting: () => <div>Redirecting you to the login page...</div>,
+});
+```
+
+**Note** If you are using a custom router, you will need to supply the `EarthoOneProvider` with a custom `onRedirectCallback` method to perform the action that returns the user to the protected page. 
+
+## Call an API
+
+Call a protected API with an Access Token:
+
+```jsx
+import React, { useEffect, useState } from 'react';
+import { useEarthoOne } from '@eartho/one-client-react';
+
+const Posts = () => {
+  const { getAccessTokenSilently } = useEarthoOne();
+  const [posts, setPosts] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: 'https://api.example.com/',
+            scope: 'read:posts',
+          },
+        });
+        const response = await fetch('https://api.example.com/posts', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setPosts(await response.json());
+      } catch (e) {
+        // Handle errors such as `login_required` and `consent_required` by re-prompting for a login
+        console.error(e);
+      }
+    })();
+  }, [getAccessTokenSilently]);
+
+  if (!posts) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <ul>
+      {posts.map((post, index) => {
+        return <li key={index}>{post}</li>;
+      })}
+    </ul>
+  );
+};
+
+export default Posts;
+```
+
+## Protecting a route in a `react-router-dom v6` app
 
 We need to access the `useNavigate` hook so we can use `navigate` in `onRedirectCallback` to return us to our `returnUrl`.
 
@@ -40,9 +121,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <EarthoOneProviderWithRedirectCallback
-        
+        domain="YOUR_EARTHO_DOMAIN"
         clientId="YOUR_EARTHO_CLIENT_ID"
-        redirectUri={window.location.origin}
+        authorizationParams={{
+          redirect_uri: window.location.origin,
+        }}
       >
         <Routes>
           <Route path="/" exact />
@@ -59,7 +142,7 @@ export default function App() {
 
 See [react-router example app](./examples/cra-react-router)
 
-## 2. Protecting a route in a Gatsby app
+## Protecting a route in a Gatsby app
 
 Wrap the root element in your `EarthoOneProvider` to configure the SDK and setup the context for the `useEarthoOne` hook.
 
@@ -79,9 +162,12 @@ const onRedirectCallback = (appState) => {
 export const wrapRootElement = ({ element }) => {
   return (
     <EarthoOneProvider
+      domain="YOUR_EARTHO_DOMAIN"
       clientId="YOUR_EARTHO_CLIENT_ID"
-      redirectUri={window.location.origin}
       onRedirectCallback={onRedirectCallback}
+      authorizationParams={{
+        redirect_uri: window.location.origin,
+      }}
     >
       {element}
     </EarthoOneProvider>
@@ -112,7 +198,7 @@ export default withAuthenticationRequired(Profile);
 
 See [Gatsby example app](./examples/gatsby-app)
 
-## 3. Protecting a route in a Next.js app (in SPA mode)
+## Protecting a route in a Next.js app (in SPA mode)
 
 Wrap the root element in your `EarthoOneProvider` to configure the SDK and setup the context for the `useEarthoOne` hook.
 
@@ -135,10 +221,13 @@ class MyApp extends App {
     const { Component, pageProps } = this.props;
     return (
       <EarthoOneProvider
-        
+        domain="YOUR_EARTHO_DOMAIN"
         clientId="YOUR_EARTHO_CLIENT_ID"
-        redirectUri={typeof window !== 'undefined' && window.location.origin}
         onRedirectCallback={onRedirectCallback}
+        authorizationParams={{
+          redirect_uri:
+            typeof window !== 'undefined' ? window.location.origin : undefined,
+        }}
       >
         <Component {...pageProps} />
       </EarthoOneProvider>
@@ -172,100 +261,68 @@ export default withAuthenticationRequired(Profile);
 
 See [Next.js example app](./examples/nextjs-app)
 
-## 4. Create a `useApi` hook for accessing protected APIs with an access token.
+## Use with Eartho organizations
 
-```js
-// use-api.js
-import { useEffect, useState } from 'react';
-import { useEarthoOne } from '@eartho/one-client-react';
 
-export const useApi = (url, options = {}) => {
-  const { getIdToken } = useEarthoOne();
-  const [state, setState] = useState({
-    error: null,
-    loading: true,
-    data: null,
-  });
-  const [refreshIndex, setRefreshIndex] = useState(0);
+```jsx
+ReactDOM.render(
+  <React.StrictMode>
+    <EarthoOneProvider
+      domain="YOUR_EARTHO_DOMAIN"
+      clientId="YOUR_EARTHO_CLIENT_ID"
+      authorizationParams={{
+        organization: "YOUR_ORGANIZATION_ID_OR_NAME"
+        redirectUri: window.location.origin,
+      }}
+    >
+      <App />
+    </EarthoOneProvider>
+  </React.StrictMode>,
+  document.getElementById('root')
+);
+```
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { audience, scope, ...fetchOptions } = options;
-        const accessToken = await getIdToken({ audience, scope });
-        const res = await fetch(url, {
-          ...fetchOptions,
-          headers: {
-            ...fetchOptions.headers,
-            // Add the Authorization header to the existing headers
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-        setState({
-          ...state,
-          data: await res.json(),
-          error: null,
-          loading: false,
-        });
-      } catch (error) {
-        setState({
-          ...state,
-          error,
-          loading: false,
-        });
+To accept an invite from an organization, you should call `connectWithRedirect` with the `invitation` and `organization` parameters.
+
+```jsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { EarthoOneProvider, useEarthoOne } from '@eartho/one-client-react';
+
+const App = () => {
+  const { connectWithRedirect } = useEarthoOne();
+  const url = window.location.href;
+  const inviteMatches = url.match(/invitation=([^&]+)/);
+  const orgMatches = url.match(/organization=([^&]+)/);
+  if (inviteMatches && orgMatches) {
+    connectWithRedirect({
+      authorizationParams: {
+        organization: orgMatches[1],
+        invitation: inviteMatches[1],
       }
-    })();
-  }, [refreshIndex]);
-
-  return {
-    ...state,
-    refresh: () => setRefreshIndex(refreshIndex + 1),
-  };
+    });
+  }
+  return <div>...</div>;
 };
 ```
 
-Then use it for accessing protected APIs from your components:
+## Protecting a route with a claims check
+
+In order to protect a route with a claims check alongside an authentication required check, you can create a HOC that will wrap your component and use that to check that the user has the required claims.
 
 ```jsx
-// users.js
-import { useApi } from './use-api';
+const withClaimCheck = (Component, myClaimCheckFunction, returnTo) => {
+  const { user } =  useEarthoOne();
+  if (myClaimCheckFunction(user)) {
+    return <Component />
+  }
+  Router.push(returnTo);
+}
 
-export const Profile = () => {
-  const opts = {
-    audience: 'https://api.example.com/',
-    scope: 'read:users',
-  };
-  const { login, getAccessTokenWithPopup } = useEarthoOne();
-  const {
-    loading,
-    error,
-    refresh,
-    data: users,
-  } = useApi('https://api.example.com/users', opts);
-  const getTokenAndTryAgain = async () => {
-    await getAccessTokenWithPopup(opts);
-    refresh();
-  };
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  if (error) {
-    if (error.error === 'login_required') {
-      return <button onClick={() => login(opts)}>Login</button>;
-    }
-    if (error.error === 'consent_required') {
-      return (
-        <button onClick={getTokenAndTryAgain}>Consent to reading users</button>
-      );
-    }
-    return <div>Oops {error.message}</div>;
-  }
-  return (
-    <ul>
-      {users.map((user, index) => {
-        return <li key={index}>{user}</li>;
-      })}
-    </ul>
-  );
-};
+const checkClaims = (claim?: User) => claim?.['https://my.app.io/jwt/claims']?.ROLE?.includes('ADMIN');
+
+// Usage
+const Page = withAuthenticationRequired(
+  withClaimCheck(Component, checkClaims, '/missing-roles' )
+);
 ```

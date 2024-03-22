@@ -21,18 +21,22 @@ export interface WithEarthoOneProps {
  * export default withEarthoOne(MyComponent);
  * ```
  *
- * Wrap your class components in this Higher Order Component to give them access to the EarthoOneContext
+ * Wrap your class components in this Higher Order Component to give them access to the EarthoOneContext.
+ *
+ * Providing a context as the second argument allows you to configure the EarthoOneProvider the EarthoOneContext
+ * should come from f you have multiple within your application.
  */
 const withEarthoOne = <P extends WithEarthoOneProps>(
-  Component: ComponentType<P>
+  Component: ComponentType<P>,
+  context = EarthoOneContext
 ): ComponentType<Omit<P, keyof WithEarthoOneProps>> => {
   return function WithAuth(props): JSX.Element {
     return (
-      <EarthoOneContext.Consumer>
+      <context.Consumer>
         {(auth: EarthoOneContextInterface): JSX.Element => (
           <Component {...(props as P)} eartho={auth} />
         )}
-      </EarthoOneContext.Consumer>
+      </context.Consumer>
     );
   };
 };

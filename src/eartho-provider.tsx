@@ -9,18 +9,22 @@ import React, {
 import {
   EarthoOne,
   EarthoOneOptions,
-  LogoutOptions,
-  LogoutUrlOptions,
   PopupConnectOptions,
   PopupConfigOptions,
-  RedirectConnectOptions as EarthoOneRedirectConnectOptions,
-  RedirectLoginResult,
-  GetTokenSilentlyOptions,
-  GetUserOptions,
+  RedirectConnectResult,
   User,
 } from '@eartho/one-client-js';
-import EarthoOneContext, { EarthoOneContextInterface, RedirectConnectOptions } from './eartho-context';
-import { hasAuthParams, loginError, tokenError } from './utils';
+import EarthoOneContext, {
+  EarthoOneContextInterface,
+  LogoutOptions,
+  RedirectConnectOptions,
+} from './eartho-context';
+import {
+  hasAuthParams,
+  loginError,
+  tokenError,
+  deprecateRedirectUri,
+} from './utils';
 import { reducer } from './reducer';
 import { initialAuthState } from './auth-state';
 
@@ -35,7 +39,7 @@ export type AppState = {
 /**
  * The main configuration to instantiate the `EarthoOneProvider`.
  */
-export interface EarthoOneProviderOptions {
+export interface EarthoOneProviderOptions extends EarthoOneOptions {
   /**
    * The child nodes your Provider has wrapped
    */
@@ -45,24 +49,38 @@ export interface EarthoOneProviderOptions {
    * It uses `window.history` but you might want to overwrite this if you are using a custom router, like `react-router-dom`
    * See the EXAMPLES.md for more info.
    */
-  onRedirectCallback?: (appState?: AppState) => void;
+  onRedirectCallback?: (appState?: AppState, user?: User) => void;
   /**
-   * The Client ID found on your Application settings page
+   * By default, if the page url has code/state params, the SDK will treat them as Eartho's and attempt to exchange the
+   * code for a token. In some cases the code might be for something else (another OAuth SDK perhaps). In these
+   * instances you can instruct the client to ignore them eg
+   *
+   * ```jsx
+   * <EarthoOneProvider
+   *   clientId={clientId}
+   *   domain={domain}
+   *   skipRedirectCallback={window.location.pathname === '/stripe-oauth-callback'}
+   * >
+   * ```
    */
-  clientId: string;
+  skipRedirectCallback?: boolean;
   /**
-   * The default URL where Eartho will redirect your browser to with
-   * the authentication result. It must be whitelisted in
-   * the "Allowed Callback URLs" field in your Eartho Application's
-   * settings. If not provided here, it should be provided in the other
-   * methods that provide authentication.
+   * Context to be used when creating the EarthoOneProvider, defaults to the internally created context.
+   *
+   * This allows multiple EarthoOneProviders to be nested within the same application, the context value can then be
+   * passed to useEarthoOne, withEarthoOne, or withAuthenticationRequired to use that specific EarthoOneProvider to access
+   * auth state and methods specifically tied to the provider that the context belongs to.
+   *
+   * When using multiple EarthoOneProviders in a single application you should do the following to ensure sessions are not
+   * overwritten:
+   *
+   * * Configure a different redirect_uri for each EarthoOneProvider, and set skipRedirectCallback for each provider to ignore
+   * the others redirect_uri
+   * * If using localstorage for both EarthoOneProviders, ensure that the audience and scope are different for so that the key
+   * used to store data is different
+   *
    */
-  redirectUri?: string;
-  /**
-   * If you need to send custom parameters to the Authorization Server,
-   * make sure to use the original parameter name.
-   */
-  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  context?: React.Context<EarthoOneContextInterface>;
 }
 
 /**
@@ -77,32 +95,14 @@ declare const __VERSION__: string;
 const toEarthoOneOptions = (
   opts: EarthoOneProviderOptions
 ): EarthoOneOptions => {
-  const { clientId, redirectUri, maxAge, ...validOpts } = opts;
+  deprecateRedirectUri(opts);
+
   return {
-    ...validOpts,
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    max_age: maxAge,
+    ...opts,
     earthoOneClient: {
       name: 'one-client-react',
       version: __VERSION__,
     },
-  };
-};
-
-/**
- * @ignore
- */
-const toEarthoOneLoginRedirectOptions = (
-  opts?: RedirectConnectOptions
-): EarthoOneRedirectConnectOptions | undefined => {
-  if (!opts) {
-    return;
-  }
-  const { redirectUri, ...validOpts } = opts;
-  return {
-    ...validOpts,
-    redirect_uri: redirectUri,
   };
 };
 
@@ -120,8 +120,9 @@ const defaultOnRedirectCallback = (appState?: AppState): void => {
 /**
  * ```jsx
  * <EarthoOneProvider
+ *   domain={domain}
  *   clientId={clientId}
- *   redirectUri={window.location.origin}>
+ *   authorizationParams={{ redirect_uri: window.location.origin }}>
  *   <MyApp />
  * </EarthoOneProvider>
  * ```
@@ -133,6 +134,7 @@ const EarthoOneProvider = (opts: EarthoOneProviderOptions): JSX.Element => {
     children,
     skipRedirectCallback,
     onRedirectCallback = defaultOnRedirectCallback,
+    context = EarthoOneContext,
     ...clientOpts
   } = opts;
   const [client] = useState(
@@ -148,13 +150,15 @@ const EarthoOneProvider = (opts: EarthoOneProviderOptions): JSX.Element => {
     didInitialise.current = true;
     (async (): Promise<void> => {
       try {
+        let user: User | undefined;
         if (hasAuthParams() && !skipRedirectCallback) {
           const { appState } = await client.handleRedirectCallback();
-          onRedirectCallback(appState);
+          user = await client.getUser();
+          onRedirectCallback(appState, user);
         } else {
           await client.checkSession();
+          user = await client.getUser();
         }
-        const user = await client.getUser();
         dispatch({ type: 'INITIALISED', user });
       } catch (error) {
         dispatch({ type: 'ERROR', error: loginError(error) });
@@ -162,20 +166,18 @@ const EarthoOneProvider = (opts: EarthoOneProviderOptions): JSX.Element => {
     })();
   }, [client, onRedirectCallback, skipRedirectCallback]);
 
-  const buildLogoutUrl = useCallback(
-    (opts?: LogoutUrlOptions): string => client.buildLogoutUrl(opts),
-    [client]
-  );
-
   const connectWithRedirect = useCallback(
-    (opts?: RedirectConnectOptions): Promise<void> =>
-      client.connectWithRedirect(toEarthoOneLoginRedirectOptions(opts)),
+    (opts: RedirectConnectOptions): Promise<void> => {
+      deprecateRedirectUri(opts);
+
+      return client.connectWithRedirect(opts);
+    },
     [client]
   );
 
   const connectWithPopup = useCallback(
     async (
-      options?: PopupConnectOptions,
+      options: PopupConnectOptions,
       config?: PopupConfigOptions
     ): Promise<void> => {
       dispatch({ type: 'LOGIN_POPUP_STARTED' });
@@ -192,45 +194,26 @@ const EarthoOneProvider = (opts: EarthoOneProviderOptions): JSX.Element => {
   );
 
   const logout = useCallback(
-    (opts: LogoutOptions = {}): Promise<void> | void => {
-      const maybePromise = client.logout(opts);
-      if (opts.localOnly) {
-        if (maybePromise && typeof maybePromise.then === 'function') {
-          return maybePromise.then(() => dispatch({ type: 'LOGOUT' }));
-        }
-        dispatch({ type: 'LOGOUT' });
-      }
-      return maybePromise;
-    },
-    [client]
-  );
-
-  const getIdToken = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async (opts?: GetTokenSilentlyOptions): Promise<any> => {
-      let token;
-      try {
-        token = await client.connectSilently(opts);
-      } catch (error) {
-        throw tokenError(error);
-      } finally {
-        dispatch({
-          type: 'GET_ACCESS_TOKEN_COMPLETE',
-          user: await client.getUser(),
-        });
-      }
-      return token;
+    async (opts: LogoutOptions = {}): Promise<void> => {
+      await client.logout(opts);
+      dispatch({ type: 'LOGOUT' });
+  
     },
     [client]
   );
 
   const getUser = useCallback(
-    (options?: GetUserOptions) => client.getUser(options),
+    () => client.getUser(),
+    [client]
+  );
+  
+  const getIdToken = useCallback(
+    () => client.getIdToken(),
     [client]
   );
 
   const handleRedirectCallback = useCallback(
-    async (url?: string): Promise<RedirectLoginResult> => {
+    async (url?: string): Promise<RedirectConnectResult> => {
       try {
         return await client.handleRedirectCallback(url);
       } catch (error) {
@@ -244,32 +227,28 @@ const EarthoOneProvider = (opts: EarthoOneProviderOptions): JSX.Element => {
     },
     [client]
   );
-
-  const contextValue = useMemo<EarthoOneContextInterface<User>>(() => ({
-    ...state,
-    buildLogoutUrl,
-    getIdToken,
-    getUser,
-    connectWithRedirect,
-    connectWithPopup,
-    logout,
-    handleRedirectCallback,
-  }), [
+  
+  const contextValue = useMemo<EarthoOneContextInterface<User>>(() => {
+    return {
+      ...state,
+      getUser,
+      getIdToken,
+      connectWithRedirect,
+      connectWithPopup,
+      logout,
+      handleRedirectCallback,
+    };
+  }, [
     state,
-    buildLogoutUrl,
-    getIdToken,
     getUser,
+    getIdToken,
     connectWithRedirect,
     connectWithPopup,
     logout,
     handleRedirectCallback,
   ]);
 
-  return (
-    <EarthoOneContext.Provider value={contextValue}>
-      {children}
-    </EarthoOneContext.Provider>
-  );
+  return <context.Provider value={contextValue}>{children}</context.Provider>;
 };
 
 export default EarthoOneProvider;

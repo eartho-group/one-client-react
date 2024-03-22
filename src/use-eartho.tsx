@@ -7,14 +7,15 @@ import EarthoOneContext, { EarthoOneContextInterface } from './eartho-context';
  * const {
  *   // Auth state:
  *   error,
- *   isConnected,
+ *   isAuthenticated,
  *   isLoading,
  *   user,
  *   // Auth methods:
+ *   getAccessTokenSilently,
+ *   getAccessTokenWithPopup,
  *   getIdToken,
- *   getUser,
+ *   connectWithRedirect,
  *   connectWithPopup,
- *   loginWithPopup,
  *   logout,
  * } = useEarthoOne<TUser>();
  * ```
@@ -23,7 +24,9 @@ import EarthoOneContext, { EarthoOneContextInterface } from './eartho-context';
  *
  * TUser is an optional type param to provide a type to the `user` field.
  */
-const useEarthoOne = <TUser extends User = User>(): EarthoOneContextInterface<TUser> =>
-  useContext(EarthoOneContext) as EarthoOneContextInterface<TUser>;
+const useEarthoOne = <TUser extends User = User>(
+  context = EarthoOneContext
+): EarthoOneContextInterface<TUser> =>
+  useContext(context) as EarthoOneContextInterface<TUser>;
 
-export default useEarthoOne;  
+export default useEarthoOne;

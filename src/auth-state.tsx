@@ -5,7 +5,7 @@ import { User } from '@eartho/one-client-js';
  */
 export interface AuthState<TUser extends User = User> {
   error?: Error;
-  isConnected: boolean;
+  isAuthenticated: boolean;
   isLoading: boolean;
   user?: TUser;
 }
@@ -14,6 +14,6 @@ export interface AuthState<TUser extends User = User> {
  * The initial auth state.
  */
 export const initialAuthState: AuthState = {
-  isConnected: false,
+  isAuthenticated: false,
   isLoading: true,
 };

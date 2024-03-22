@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import { Loading } from './Loading';
 
 export function Nav() {
-  const { isAuthenticated, isLoading, user, loginWithRedirect, logout } =
+  const { isAuthenticated, isLoading, user, connectWithRedirect, logout } =
     useEarthoOne();
   const { pathname } = useRouter();
 
@@ -52,7 +52,9 @@ export function Nav() {
         <button
           className="btn btn-outline-success"
           id="login"
-          onClick={() => loginWithRedirect()}
+          onClick={() => connectWithRedirect({
+            accessId: process.env.NEXT_PUBLIC_ACCESS_ID
+          })}
         >
           login
         </button>

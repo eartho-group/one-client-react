@@ -1,11 +1,19 @@
 import React, { ComponentType, useEffect, FC } from 'react';
-import { PopupConnectOptions, User } from '@eartho/one-client-js';
 import useEarthoOne from './use-eartho';
+import EarthoOneContext, {
+  EarthoOneContextInterface,
+  RedirectConnectOptions,
+} from './eartho-context';
 
 /**
  * @ignore
  */
 const defaultOnRedirecting = (): JSX.Element => <></>;
+
+/**
+* @ignore
+*/
+const defaultOnBeforeAuthentication = async (): Promise<void> => {/* noop */};
 
 /**
  * @ignore
@@ -48,6 +56,16 @@ export interface WithAuthenticationRequiredOptions {
   /**
    * ```js
    * withAuthenticationRequired(Profile, {
+   *   onBeforeAuthentication: () => { analyticsLibrary.track('login_triggered'); }
+   * })
+   * ```
+   *
+   * Allows executing logic before the user is redirected to the login page.
+   */
+  onBeforeAuthentication?: () => Promise<void>;
+  /**
+   * ```js
+   * withAuthenticationRequired(Profile, {
    *   loginOptions: {
    *     appState: {
    *       customProp: 'foo'
@@ -59,12 +77,13 @@ export interface WithAuthenticationRequiredOptions {
    * Pass additional login options, like extra `appState` to the login page.
    * This will be merged with the `returnTo` option used by the `onRedirectCallback` handler.
    */
-  loginOptions?: PopupConnectOptions;
+  loginOptions: RedirectConnectOptions;
   /**
-   * Check the user object for JWT claims and return a boolean indicating
-   * whether or not they are authorized to view the component.
+   * The context to be used when calling useEarthoOne, this should only be provided if you are using multiple EarthoOneProviders
+   * within your application and you wish to tie a specific component to a EarthoOneProvider other than the EarthoOneProvider
+   * associated with the default EarthoOneContext.
    */
-  claimCheck?: (claims?: User) => boolean;
+  context?: React.Context<EarthoOneContextInterface>;
 }
 
 /**
@@ -73,29 +92,26 @@ export interface WithAuthenticationRequiredOptions {
  * ```
  *
  * When you wrap your components in this Higher Order Component and an anonymous user visits your component
- * they will be redirected to the login page and returned to the page they we're redirected from after login.
+ * they will be redirected to the login page; after login they will be returned to the page they were redirected from.
  */
 const withAuthenticationRequired = <P extends object>(
   Component: ComponentType<P>,
-  options: WithAuthenticationRequiredOptions = {}
+  options: WithAuthenticationRequiredOptions
 ): FC<P> => {
   return function WithAuthenticationRequired(props: P): JSX.Element {
-    const { user, isConnected, isLoading, connectWithRedirect } = useEarthoOne();
     const {
       returnTo = defaultReturnTo,
       onRedirecting = defaultOnRedirecting,
-      claimCheck = (): boolean => true,
+      onBeforeAuthentication = defaultOnBeforeAuthentication,
       loginOptions,
+      context = EarthoOneContext,
     } = options;
 
-    /**
-     * The route is authenticated if the user has valid auth and there are no
-     * JWT claim mismatches.
-     */
-    const routeIsAuthenticated = isConnected && claimCheck(user);
+    const { isAuthenticated, isLoading, connectWithRedirect } =
+      useEarthoOne(context);
 
     useEffect(() => {
-      if (isLoading || routeIsAuthenticated) {
+      if (isLoading || isAuthenticated) {
         return;
       }
       const opts = {
@@ -106,17 +122,19 @@ const withAuthenticationRequired = <P extends object>(
         },
       };
       (async (): Promise<void> => {
+        await onBeforeAuthentication();
         await connectWithRedirect(opts);
       })();
     }, [
       isLoading,
-      routeIsAuthenticated,
+      isAuthenticated,
       connectWithRedirect,
+      onBeforeAuthentication,
       loginOptions,
       returnTo,
     ]);
 
-    return routeIsAuthenticated ? <Component {...props} /> : onRedirecting();
+    return isAuthenticated ? <Component {...props} /> : onRedirecting();
   };
 };
 

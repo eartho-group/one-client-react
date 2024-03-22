@@ -19,8 +19,6 @@ class MyApp extends App {
         clientId={process.env.NEXT_PUBLIC_CLIENT_ID}
         onRedirectCallback={onRedirectCallback}
         authorizationParams={{
-          scope: 'profile email read:users',
-          audience: process.env.NEXT_PUBLIC_AUDIENCE,
           redirect_uri: typeof window !== 'undefined' && window.location.origin,
         }}
       >

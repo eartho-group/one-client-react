@@ -9,7 +9,7 @@ Add the file `./examples/nextjs-app/.env` with the `domain` and `clientId` of th
 ```dotenv
 NEXT_PUBLIC_DOMAIN=yourdomain.com
 NEXT_PUBLIC_CLIENT_ID=yourclientid
-NEXT_PUBLIC_AUDIENCE=https://api.example.com/users
+NEXT_PUBLIC_ACCESS_ID=https://api.example.com/users
 ```
 
 Run `npm run dev` to start the application at http://localhost:3000

@@ -12,8 +12,7 @@ const Users = () => {
     error,
     data: users = [],
   } = useApi(`http://localhost:${PORT}/users`, {
-    audience: process.env.NEXT_PUBLIC_AUDIENCE,
-    scope: 'profile email read:users',
+    access_id: process.env.NEXT_PUBLIC_ACCESS_ID,
   });
 
   if (loading) {
@@ -44,4 +43,4 @@ const Users = () => {
   );
 };
 
-export default withAuthenticationRequired(Users);
+export default withAuthenticationRequired(Users, {access_id: ""});

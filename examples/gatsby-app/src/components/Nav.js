@@ -3,7 +3,7 @@ import { Link } from 'gatsby';
 import { useEarthoOne } from '@eartho/one-client-react';
 
 export function Nav() {
-  const { isAuthenticated, user, loginWithRedirect, logout } = useEarthoOne();
+  const { isAuthenticated, user, connectWithRedirect, logout } = useEarthoOne();
   const pathname = typeof window !== 'undefined' && window.location.pathname;
 
   return (
@@ -48,7 +48,7 @@ export function Nav() {
           <button
             className="btn btn-outline-success"
             id="login"
-            onClick={() => loginWithRedirect()}
+            onClick={() => connectWithRedirect()}
           >
             login
           </button>

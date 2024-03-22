@@ -11,7 +11,7 @@ import analyze from 'rollup-plugin-analyzer';
 import { createApp } from './scripts/oidc-provider.mjs';
 
 const isProduction = process.env.NODE_ENV === 'production';
-const name = 'reactEarthoOne';
+const name = 'reactEartho';
 const input = 'src/index.tsx';
 const globals = {
   react: 'React',

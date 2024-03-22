@@ -12,21 +12,26 @@ export {
 export {
   default as EarthoOneContext,
   EarthoOneContextInterface,
-  RedirectConnectOptions as RedirectConnectOptions,
+  initialContext,
+  LogoutOptions,
+  RedirectConnectOptions,
 } from './eartho-context';
 export {
   PopupConnectOptions,
   PopupConfigOptions,
   GetTokenWithPopupOptions,
-  LogoutOptions,
   LogoutUrlOptions,
   CacheLocation,
-  GetTokenSilentlyOptions,
-  IdToken,
   User,
   ICache,
   InMemoryCache,
   LocalStorageCache,
   Cacheable,
+  TimeoutError,
+  MfaRequiredError,
+  PopupCancelledError,
+  PopupTimeoutError,
+  AuthenticationError,
+  GenericError
 } from '@eartho/one-client-js';
 export { OAuthError } from './errors';
